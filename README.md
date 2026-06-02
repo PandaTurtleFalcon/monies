@@ -3,7 +3,7 @@
 A standalone page for counting words from pasted text, uploaded `.txt` / `.md`
 files, Wikipedia article URLs, or estimated book word counts from ISBNs. It
 calculates one nickel for every 60,000 words, keeps a saved running total in the
-browser, and stores a lightweight collection of saved reading items.
+cloud, and stores a lightweight shared collection of saved reading items.
 
 ## Open Locally
 
@@ -29,5 +29,15 @@ Then in Google Sites:
 
 In GitHub, open **Settings / Pages**, choose **Deploy from a branch**, then set:
 
-- Branch: `main`
+- Branch: `gh-pages`
 - Folder: `/ (root)`
+
+## Cloud Sync
+
+The shared saved total and collection sync through Firebase Firestore at:
+
+```text
+wordNickelCounter/shared
+```
+
+The live text box remains local/private until someone saves or adds an item.
