@@ -1050,10 +1050,11 @@ This sample is only here so the counter has something friendly to measure.`;
       const render = () => {
         const wordsPerNickel = Math.max(1, Number(state.wordsPerNickel) || 60000);
         const currentWords = getCurrentWords();
+        const savedWords = Math.max(0, Math.round(Number(state.savedWords) || 0));
         const currentReward = getReward(currentWords, wordsPerNickel);
-        const savedReward = getReward(state.savedWords, wordsPerNickel);
-        const remainder = currentWords % wordsPerNickel;
-        const remaining = currentWords === 0 ? wordsPerNickel : wordsPerNickel - remainder;
+        const savedReward = getReward(savedWords, wordsPerNickel);
+        const remainder = savedWords % wordsPerNickel;
+        const remaining = remainder === 0 ? wordsPerNickel : wordsPerNickel - remainder;
         const progress = Math.round((remainder / wordsPerNickel) * 100);
         const pageCount = Math.ceil(currentWords / PAGE_WORDS);
 
@@ -1070,10 +1071,10 @@ This sample is only here so the counter has something friendly to measure.`;
         els.savedNickels.textContent = `${formatNumber(savedReward.nickels)} ${
           savedReward.nickels === 1 ? "nickel" : "nickels"
         } earned`;
-        els.savedWords.textContent = `${formatNumber(state.savedWords)} saved ${
-          state.savedWords === 1 ? "word" : "words"
+        els.savedWords.textContent = `${formatNumber(savedWords)} saved ${
+          savedWords === 1 ? "word" : "words"
         }`;
-        els.progressCopy.textContent = `${progress}% to next nickel`;
+        els.progressCopy.textContent = `${progress}% to next nickel from saved total`;
         els.remainingCopy.textContent = `${formatNumber(remaining)} ${
           remaining === 1 ? "word" : "words"
         } left`;
