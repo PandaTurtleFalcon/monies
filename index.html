@@ -399,6 +399,22 @@
         font-weight: 800;
       }
 
+      .cloud-status {
+        min-height: 22px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      .cloud-status.is-online {
+        color: var(--green-dark);
+      }
+
+      .cloud-status.is-error {
+        color: var(--rose);
+      }
+
       @media (max-width: 820px) {
         .hero,
         .tool {
@@ -539,6 +555,9 @@
             <button class="btn danger" id="reset-button" type="button">Reset saved total</button>
           </div>
           <div class="toast" id="toast" role="status" aria-live="polite"></div>
+          <div class="cloud-status" id="cloud-status" role="status" aria-live="polite">
+            Cloud sync starting...
+          </div>
         </div>
       </section>
 
@@ -563,10 +582,16 @@
       </section>
     </main>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="./firebase-config.js"></script>
     <script>
       const NICKEL_VALUE = 0.05;
       const PAGE_WORDS = 250;
       const BOOK_WORDS_PER_PAGE = 275;
+      const CLOUD_COLLECTION = "wordNickelCounter";
+      const CLOUD_DOCUMENT = "shared";
       const STORAGE_KEY = "word-nickel-counter-state";
 
       const els = {
@@ -577,6 +602,7 @@
         bookIsbn: document.querySelector("#book-isbn"),
         bookWordsPage: document.querySelector("#book-words-page"),
         clearCollectionButton: document.querySelector("#clear-collection-button"),
+        cloudStatus: document.querySelector("#cloud-status"),
         collectionEmpty: document.querySelector("#collection-empty"),
         collectionList: document.querySelector("#collection-list"),
         copyButton: document.querySelector("#copy-button"),
@@ -632,6 +658,13 @@ This sample is only here so the counter has something friendly to measure.`;
       els.readerText.value = state.draftText;
       els.bookWordsPage.value = state.wordsPerBookPage;
 
+      const cloud = {
+        applyingRemote: false,
+        db: null,
+        ready: false,
+        writeTimer: null,
+      };
+
       const formatNumber = (value) => new Intl.NumberFormat("en-US").format(value);
       const formatMoney = (value) =>
         new Intl.NumberFormat("en-US", {
@@ -663,6 +696,120 @@ This sample is only here so the counter has something friendly to measure.`;
 
       const createId = () =>
         `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const setCloudStatus = (message, mode = "") => {
+        els.cloudStatus.textContent = message;
+        els.cloudStatus.classList.toggle("is-online", mode === "online");
+        els.cloudStatus.classList.toggle("is-error", mode === "error");
+      };
+
+      const sanitizeCollection = (items) =>
+        (Array.isArray(items) ? items : [])
+          .filter((item) => item && typeof item === "object")
+          .map((item) => ({
+            detail: String(item.detail ?? "").slice(0, 280),
+            id: String(item.id ?? createId()),
+            savedAt: String(item.savedAt ?? new Date().toISOString()),
+            source: String(item.source ?? "Text").slice(0, 40),
+            title: String(item.title ?? "Untitled").slice(0, 120),
+            words: Math.max(0, Math.round(Number(item.words) || 0)),
+          }))
+          .slice(0, 250);
+
+      const getCloudPayload = () => ({
+        collection: sanitizeCollection(state.collection),
+        savedWords: Math.max(0, Math.round(Number(state.savedWords) || 0)),
+        updatedAt: Date.now(),
+        wordsPerNickel: Math.max(1, Math.round(Number(state.wordsPerNickel) || 60000)),
+      });
+
+      const getCloudDoc = () => cloud.db.collection(CLOUD_COLLECTION).doc(CLOUD_DOCUMENT);
+
+      const writeCloudState = async () => {
+        if (!cloud.ready || cloud.applyingRemote) {
+          return;
+        }
+
+        try {
+          await getCloudDoc().set(
+            {
+              ...getCloudPayload(),
+              firebaseUpdatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+          setCloudStatus("Cloud sync on. Everyone sees the same saved total and collection.", "online");
+        } catch (error) {
+          setCloudStatus(`Cloud sync failed: ${error.message}`, "error");
+        }
+      };
+
+      const queueCloudWrite = () => {
+        window.clearTimeout(cloud.writeTimer);
+        cloud.writeTimer = window.setTimeout(writeCloudState, 350);
+      };
+
+      const applyCloudData = (data) => {
+        if (!data || typeof data !== "object") {
+          return;
+        }
+
+        cloud.applyingRemote = true;
+        state = {
+          ...state,
+          collection: sanitizeCollection(data.collection),
+          savedWords: Math.max(0, Math.round(Number(data.savedWords) || 0)),
+          wordsPerNickel: Math.max(1, Math.round(Number(data.wordsPerNickel) || state.wordsPerNickel)),
+        };
+        saveState(state);
+        render();
+        cloud.applyingRemote = false;
+      };
+
+      const initCloudSync = async () => {
+        const config = window.MONIES_FIREBASE_CONFIG;
+
+        if (!config?.apiKey || !config?.projectId || !window.firebase?.firestore) {
+          setCloudStatus("Cloud sync is not configured. Using this browser only.", "error");
+          return;
+        }
+
+        try {
+          const app = window.firebase.apps?.length
+            ? window.firebase.app()
+            : window.firebase.initializeApp(config);
+
+          if (window.firebase.auth) {
+            try {
+              await window.firebase.auth(app).signInAnonymously();
+            } catch (error) {
+              if (error.code !== "auth/admin-restricted-operation") {
+                throw error;
+              }
+            }
+          }
+
+          cloud.db = window.firebase.firestore(app);
+          cloud.ready = true;
+
+          getCloudDoc().onSnapshot(
+            async (snapshot) => {
+              if (snapshot.exists) {
+                applyCloudData(snapshot.data());
+                setCloudStatus("Cloud sync on. Everyone sees the same saved total and collection.", "online");
+                return;
+              }
+
+              await writeCloudState();
+            },
+            (error) => {
+              setCloudStatus(`Cloud sync blocked: ${error.message}`, "error");
+            }
+          );
+        } catch (error) {
+          setCloudStatus(`Cloud sync unavailable: ${error.message}`, "error");
+        }
+      };
 
       const shorten = (value, length = 70) => {
         const clean = value.replace(/\s+/g, " ").trim();
@@ -714,6 +861,7 @@ This sample is only here so the counter has something friendly to measure.`;
         };
         saveState(state);
         render();
+        queueCloudWrite();
         setToast(`Saved ${item.title} to collection.`);
         return item;
       };
@@ -1055,6 +1203,7 @@ This sample is only here so the counter has something friendly to measure.`;
         };
         saveState(state);
         render();
+        queueCloudWrite();
         setToast("Reward rate updated.");
       });
 
@@ -1073,6 +1222,7 @@ This sample is only here so the counter has something friendly to measure.`;
         };
         saveState(state);
         render();
+        queueCloudWrite();
         setToast(`Added ${formatNumber(currentWords)} words and saved it to collection.`);
       });
 
@@ -1106,6 +1256,7 @@ This sample is only here so the counter has something friendly to measure.`;
         };
         saveState(state);
         render();
+        queueCloudWrite();
         setToast("Saved total reset.");
       });
 
@@ -1116,6 +1267,7 @@ This sample is only here so the counter has something friendly to measure.`;
         };
         saveState(state);
         render();
+        queueCloudWrite();
         setToast("Collection cleared.");
       });
 
@@ -1140,6 +1292,7 @@ This sample is only here so the counter has something friendly to measure.`;
           };
           saveState(state);
           render();
+          queueCloudWrite();
           setToast(`Deleted ${item.title}.`);
           return;
         }
@@ -1151,6 +1304,7 @@ This sample is only here so the counter has something friendly to measure.`;
           };
           saveState(state);
           render();
+          queueCloudWrite();
           setToast(`Added ${formatNumber(item.words)} words from ${item.title}.`);
           return;
         }
@@ -1199,6 +1353,7 @@ This sample is only here so the counter has something friendly to measure.`;
       });
 
       render();
+      initCloudSync();
     </script>
   </body>
 </html>
