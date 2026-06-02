@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Nickel Counter</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f5ef;
+        --ink: #1b2220;
+        --muted: #69706b;
+        --surface: #ffffff;
+        --line: #d9ded6;
+        --green: #18745f;
+        --green-dark: #0d463a;
+        --gold: #c78b21;
+        --rose: #b64b5a;
+        --shadow: 0 18px 46px rgba(27, 34, 32, 0.12);
+        --radius: 8px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(135deg, rgba(24, 116, 95, 0.12), transparent 34rem),
+          linear-gradient(180deg, #fffdfa 0%, var(--bg) 100%);
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .wrap {
+        width: min(1060px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(230px, 340px);
+        gap: 20px;
+        align-items: stretch;
+        margin-bottom: 18px;
+      }
+
+      .intro,
+      .total-card,
+      .tool,
+      .stat,
+      .settings,
+      .collection,
+      .note {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: var(--shadow);
+      }
+
+      .intro {
+        padding: clamp(22px, 4vw, 42px);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--green);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 680px;
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 6vw, 4.7rem);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      .intro p,
+      .note p,
+      .small {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .total-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 240px;
+        padding: 22px;
+        background:
+          linear-gradient(145deg, rgba(13, 70, 58, 0.94), rgba(24, 116, 95, 0.9)),
+          var(--green-dark);
+        color: #fffdf8;
+      }
+
+      .total-card p {
+        margin: 0;
+        color: rgba(255, 253, 248, 0.76);
+      }
+
+      .money {
+        margin: 10px 0 2px;
+        font-size: clamp(2.8rem, 8vw, 5.6rem);
+        font-weight: 850;
+        line-height: 0.9;
+      }
+
+      .nickels {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .tool {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+        gap: 0;
+        overflow: hidden;
+      }
+
+      .input-side,
+      .output-side {
+        padding: 22px;
+      }
+
+      .input-side {
+        border-right: 1px solid var(--line);
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .file-control {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fbfaf6;
+        color: var(--green-dark);
+        font-weight: 800;
+      }
+
+      .file-control input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .lookup-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .book-form {
+        grid-template-columns: minmax(0, 1fr) minmax(130px, 180px) auto;
+      }
+
+      .lookup-form input {
+        min-width: 0;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fffefa;
+      }
+
+      textarea {
+        display: block;
+        width: 100%;
+        min-height: 420px;
+        resize: vertical;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        outline: none;
+        background: #fffefa;
+        color: var(--ink);
+        line-height: 1.55;
+      }
+
+      textarea:focus,
+      input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 4px rgba(24, 116, 95, 0.13);
+      }
+
+      .stats {
+        display: grid;
+        gap: 12px;
+      }
+
+      .stat {
+        padding: 16px;
+        box-shadow: none;
+      }
+
+      .stat span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: clamp(1.7rem, 5vw, 2.4rem);
+        line-height: 1;
+      }
+
+      .progress-shell {
+        margin: 15px 0;
+      }
+
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .progress {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e5e3da;
+      }
+
+      .progress div {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--gold), var(--green));
+        transition: width 160ms ease;
+      }
+
+      .settings {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: end;
+        margin-top: 14px;
+        padding: 14px;
+        box-shadow: none;
+      }
+
+      label span {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fffefa;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .btn {
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        background: var(--green);
+        color: #fffefa;
+        font-weight: 850;
+      }
+
+      .btn.secondary {
+        border-color: var(--line);
+        background: #fffefa;
+        color: var(--green-dark);
+      }
+
+      .btn.danger {
+        border-color: rgba(182, 75, 90, 0.32);
+        background: #fff2f3;
+        color: var(--rose);
+      }
+
+      .note {
+        margin-top: 18px;
+        padding: 16px;
+        box-shadow: none;
+      }
+
+      .collection {
+        margin-top: 18px;
+        padding: 22px;
+      }
+
+      .collection-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .collection-header h2 {
+        margin: 0 0 5px;
+        font-size: clamp(1.45rem, 4vw, 2.2rem);
+      }
+
+      .collection-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .collection-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fffefa;
+      }
+
+      .collection-item h3 {
+        margin: 0 0 4px;
+        font-size: 1.04rem;
+      }
+
+      .collection-item p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .collection-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .mini-btn {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 0.88rem;
+      }
+
+      .toast {
+        min-height: 22px;
+        margin-top: 12px;
+        color: var(--green-dark);
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      @media (max-width: 820px) {
+        .hero,
+        .tool {
+          grid-template-columns: 1fr;
+        }
+
+        .lookup-form,
+        .book-form {
+          grid-template-columns: 1fr;
+        }
+
+        .input-side {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        textarea {
+          min-height: 330px;
+        }
+
+        .collection-item {
+          grid-template-columns: 1fr;
+        }
+
+        .collection-actions {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="intro">
+          <p class="eyebrow">Reading reward tracker</p>
+          <h1 id="page-title">Word Nickel Counter</h1>
+          <p>
+            Paste an article, chapter, or book text. For every 60,000 words,
+            this counts one nickel toward your reading deal.
+          </p>
+        </div>
+
+        <aside class="total-card" aria-label="Saved reading total">
+          <div>
+            <p>Saved total</p>
+            <div class="money" id="saved-money">$0.00</div>
+            <div class="nickels" id="saved-nickels">0 nickels earned</div>
+          </div>
+          <p id="saved-words">0 saved words</p>
+        </aside>
+      </section>
+
+      <section class="tool" aria-label="Word counter">
+        <div class="input-side">
+          <div class="toolbar">
+            <label class="file-control">
+              Upload text file
+              <input id="file-input" type="file" accept=".txt,.md,.text,text/plain,text/markdown" />
+            </label>
+            <button class="btn secondary" id="sample-button" type="button">Try sample</button>
+          </div>
+
+          <form class="lookup-form" id="wiki-form">
+            <input
+              id="wiki-url"
+              type="url"
+              placeholder="Paste a Wikipedia article URL..."
+              aria-label="Wikipedia article URL"
+            />
+            <button class="btn secondary" id="wiki-button" type="submit">Count Wikipedia page</button>
+          </form>
+
+          <form class="lookup-form book-form" id="book-form">
+            <input
+              id="book-isbn"
+              type="text"
+              inputmode="search"
+              placeholder="Enter a book ISBN..."
+              aria-label="Book ISBN"
+            />
+            <input
+              id="book-words-page"
+              type="number"
+              min="1"
+              step="25"
+              value="275"
+              aria-label="Estimated words per page"
+            />
+            <button class="btn secondary" id="book-button" type="submit">Estimate book</button>
+          </form>
+
+          <textarea
+            id="reader-text"
+            aria-label="Article or book text"
+            placeholder="Paste your article or book text here..."
+            spellcheck="false"
+          ></textarea>
+        </div>
+
+        <div class="output-side">
+          <div class="stats">
+            <div class="stat">
+              <span>Current text</span>
+              <strong id="current-words">0 words</strong>
+            </div>
+            <div class="stat">
+              <span>Current reward</span>
+              <strong id="current-money">$0.00</strong>
+            </div>
+            <div class="stat">
+              <span>Reading size</span>
+              <strong id="page-estimate">0 pages</strong>
+            </div>
+          </div>
+
+          <div class="progress-shell">
+            <div class="progress-label">
+              <span id="progress-copy">0% to next nickel</span>
+              <span id="remaining-copy">60,000 words left</span>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div id="progress-bar"></div>
+            </div>
+          </div>
+
+          <div class="settings">
+            <label>
+              <span>Words per nickel</span>
+              <input id="words-per-nickel" type="number" min="1" step="1000" value="60000" />
+            </label>
+            <button class="btn secondary" id="apply-rate" type="button">Apply</button>
+          </div>
+
+          <div class="actions">
+            <button class="btn" id="add-button" type="button">Add to saved total</button>
+            <button class="btn secondary" id="save-item-button" type="button">Save to collection</button>
+            <button class="btn secondary" id="copy-button" type="button">Copy summary</button>
+            <button class="btn danger" id="reset-button" type="button">Reset saved total</button>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="collection" aria-labelledby="collection-title">
+        <div class="collection-header">
+          <div>
+            <p class="eyebrow">Reading log</p>
+            <h2 id="collection-title">Collection</h2>
+            <p class="small">Saved items keep word counts and details, not full article or book text.</p>
+          </div>
+          <button class="btn danger" id="clear-collection-button" type="button">Clear collection</button>
+        </div>
+        <div class="collection-list" id="collection-list"></div>
+        <p class="small" id="collection-empty">No saved items yet.</p>
+      </section>
+
+      <section class="note" aria-label="Google Sites note">
+        <p>
+          Google Sites can embed this page with <strong>Insert / Embed</strong>
+          after the file is hosted at a public web URL.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      const NICKEL_VALUE = 0.05;
+      const PAGE_WORDS = 250;
+      const BOOK_WORDS_PER_PAGE = 275;
+      const STORAGE_KEY = "word-nickel-counter-state";
+
+      const els = {
+        addButton: document.querySelector("#add-button"),
+        applyRate: document.querySelector("#apply-rate"),
+        bookButton: document.querySelector("#book-button"),
+        bookForm: document.querySelector("#book-form"),
+        bookIsbn: document.querySelector("#book-isbn"),
+        bookWordsPage: document.querySelector("#book-words-page"),
+        clearCollectionButton: document.querySelector("#clear-collection-button"),
+        collectionEmpty: document.querySelector("#collection-empty"),
+        collectionList: document.querySelector("#collection-list"),
+        copyButton: document.querySelector("#copy-button"),
+        currentMoney: document.querySelector("#current-money"),
+        currentWords: document.querySelector("#current-words"),
+        fileInput: document.querySelector("#file-input"),
+        pageEstimate: document.querySelector("#page-estimate"),
+        progressBar: document.querySelector("#progress-bar"),
+        progressCopy: document.querySelector("#progress-copy"),
+        rateInput: document.querySelector("#words-per-nickel"),
+        readerText: document.querySelector("#reader-text"),
+        remainingCopy: document.querySelector("#remaining-copy"),
+        resetButton: document.querySelector("#reset-button"),
+        sampleButton: document.querySelector("#sample-button"),
+        saveItemButton: document.querySelector("#save-item-button"),
+        savedMoney: document.querySelector("#saved-money"),
+        savedNickels: document.querySelector("#saved-nickels"),
+        savedWords: document.querySelector("#saved-words"),
+        toast: document.querySelector("#toast"),
+        wikiButton: document.querySelector("#wiki-button"),
+        wikiForm: document.querySelector("#wiki-form"),
+        wikiUrl: document.querySelector("#wiki-url"),
+      };
+
+      const sampleText = `A reader starts with one quiet page and then another.
+Each paragraph adds up, even when the progress feels small.
+This sample is only here so the counter has something friendly to measure.`;
+
+      const getDefaultState = () => ({
+        collection: [],
+        currentItem: null,
+        draftWordCount: null,
+        draftText: "",
+        savedWords: 0,
+        wordsPerBookPage: BOOK_WORDS_PER_PAGE,
+        wordsPerNickel: 60000,
+      });
+
+      const loadState = () => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          return { ...getDefaultState(), ...saved };
+        } catch {
+          return getDefaultState();
+        }
+      };
+
+      const saveState = (nextState) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      };
+
+      let state = loadState();
+      els.readerText.value = state.draftText;
+      els.bookWordsPage.value = state.wordsPerBookPage;
+
+      const formatNumber = (value) => new Intl.NumberFormat("en-US").format(value);
+      const formatMoney = (value) =>
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(value);
+
+      const countWords = (text) => {
+        const normalized = text
+          .replace(/[’']/g, "'")
+          .replace(/[\u2013\u2014]/g, "-")
+          .trim();
+
+        if (!normalized) {
+          return 0;
+        }
+
+        const matches = normalized.match(/[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*/g);
+        return matches ? matches.length : 0;
+      };
+
+      const getReward = (words, wordsPerNickel) => {
+        const nickels = Math.floor(words / wordsPerNickel);
+        return {
+          nickels,
+          money: nickels * NICKEL_VALUE,
+        };
+      };
+
+      const createId = () =>
+        `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const shorten = (value, length = 70) => {
+        const clean = value.replace(/\s+/g, " ").trim();
+        return clean.length > length ? `${clean.slice(0, length - 1)}...` : clean;
+      };
+
+      const getFallbackCurrentItem = (words) => {
+        const firstLine = els.readerText.value
+          .split("\n")
+          .map((line) => line.trim())
+          .find(Boolean);
+
+        return {
+          detail: "Manually entered text",
+          source: "Text",
+          title: firstLine ? shorten(firstLine, 54) : "Untitled text",
+          words,
+        };
+      };
+
+      const getCurrentCollectionItem = () => {
+        const words = getCurrentWords();
+
+        if (words === 0) {
+          return null;
+        }
+
+        const item = state.currentItem ?? getFallbackCurrentItem(words);
+
+        return {
+          ...item,
+          id: createId(),
+          savedAt: new Date().toISOString(),
+          words,
+        };
+      };
+
+      const saveCurrentToCollection = () => {
+        const item = getCurrentCollectionItem();
+
+        if (!item) {
+          setToast("Load or enter something first.");
+          return null;
+        }
+
+        state = {
+          ...state,
+          collection: [item, ...(state.collection ?? [])],
+        };
+        saveState(state);
+        render();
+        setToast(`Saved ${item.title} to collection.`);
+        return item;
+      };
+
+      const parseWikipediaUrl = (value) => {
+        let url;
+
+        try {
+          url = new URL(value.trim());
+        } catch {
+          throw new Error("Paste a full Wikipedia article URL.");
+        }
+
+        const hostParts = url.hostname.toLowerCase().split(".");
+        const isWikipedia = hostParts.at(-2) === "wikipedia" && hostParts.at(-1) === "org";
+        const language = hostParts.length >= 3 ? hostParts[0] : "en";
+        const titleMatch = url.pathname.match(/^\/wiki\/(.+)$/);
+
+        if (!isWikipedia || !titleMatch) {
+          throw new Error("That does not look like a Wikipedia article URL.");
+        }
+
+        return {
+          language,
+          title: decodeURIComponent(titleMatch[1]).replace(/_/g, " "),
+        };
+      };
+
+      const fetchWikipediaArticle = async (value) => {
+        const { language, title } = parseWikipediaUrl(value);
+        const params = new URLSearchParams({
+          action: "query",
+          format: "json",
+          origin: "*",
+          prop: "extracts",
+          redirects: "1",
+          titles: title,
+          explaintext: "1",
+        });
+        const response = await fetch(`https://${language}.wikipedia.org/w/api.php?${params}`);
+
+        if (!response.ok) {
+          throw new Error("Wikipedia did not return that article.");
+        }
+
+        const data = await response.json();
+        const page = Object.values(data.query?.pages ?? {})[0];
+
+        if (!page || page.missing || !page.extract) {
+          throw new Error("I could not find readable text for that Wikipedia page.");
+        }
+
+        return {
+          title: page.title,
+          text: page.extract,
+        };
+      };
+
+      const cleanIsbn = (value) => value.trim().replace(/[^0-9Xx]/g, "").toUpperCase();
+
+      const fetchBookEstimate = async (value) => {
+        const isbn = cleanIsbn(value);
+        const wordsPerPage = Math.max(1, Number(els.bookWordsPage.value) || BOOK_WORDS_PER_PAGE);
+
+        if (!/^(?:[0-9]{10}|[0-9]{13}|[0-9]{9}X)$/.test(isbn)) {
+          throw new Error("Enter a valid 10 or 13 digit ISBN.");
+        }
+
+        const params = new URLSearchParams({
+          isbn,
+          fields: "title,author_name,number_of_pages_median,first_publish_year",
+        });
+        const response = await fetch(`https://openlibrary.org/search.json?${params}`);
+
+        if (!response.ok) {
+          throw new Error("Open Library did not return that ISBN.");
+        }
+
+        const data = await response.json();
+        const book = data.docs?.[0];
+        const pages = Number(book?.number_of_pages_median);
+
+        if (!book) {
+          throw new Error("I could not find that ISBN in Open Library.");
+        }
+
+        if (!Number.isFinite(pages) || pages <= 0) {
+          throw new Error("I found the book, but not a page count to estimate from.");
+        }
+
+        return {
+          author: book.author_name?.[0] ?? "Unknown author",
+          estimatedWords: Math.round(pages * wordsPerPage),
+          isbn,
+          pages,
+          title: book.title ?? "Untitled book",
+          wordsPerPage,
+          year: book.first_publish_year,
+        };
+      };
+
+      const getCurrentWords = () => {
+        if (Number.isFinite(state.draftWordCount)) {
+          return state.draftWordCount;
+        }
+
+        return countWords(els.readerText.value);
+      };
+
+      const saveDraftText = () => {
+        state = {
+          ...state,
+          draftText: els.readerText.value,
+        };
+        saveState(state);
+      };
+
+      const setToast = (message) => {
+        els.toast.textContent = message;
+        window.clearTimeout(setToast.timeoutId);
+        setToast.timeoutId = window.setTimeout(() => {
+          els.toast.textContent = "";
+        }, 2600);
+      };
+
+      const renderCollection = () => {
+        const items = state.collection ?? [];
+        els.collectionEmpty.hidden = items.length > 0;
+        els.collectionList.innerHTML = "";
+
+        items.forEach((item) => {
+          const row = document.createElement("article");
+          row.className = "collection-item";
+          row.dataset.id = item.id;
+
+          const copy = document.createElement("div");
+          const title = document.createElement("h3");
+          const meta = document.createElement("p");
+          const detail = document.createElement("p");
+
+          title.textContent = item.title;
+          meta.textContent = `${item.source} / ${formatNumber(item.words)} words / ${formatMoney(
+            getReward(item.words, Math.max(1, Number(state.wordsPerNickel) || 60000)).money
+          )}`;
+          detail.textContent = item.detail;
+
+          copy.append(title, meta, detail);
+
+          const actions = document.createElement("div");
+          actions.className = "collection-actions";
+
+          const loadButton = document.createElement("button");
+          loadButton.className = "btn secondary mini-btn";
+          loadButton.type = "button";
+          loadButton.dataset.action = "load";
+          loadButton.textContent = "Load";
+
+          const addButton = document.createElement("button");
+          addButton.className = "btn mini-btn";
+          addButton.type = "button";
+          addButton.dataset.action = "add";
+          addButton.textContent = "Add words";
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn danger mini-btn";
+          deleteButton.type = "button";
+          deleteButton.dataset.action = "delete";
+          deleteButton.textContent = "Delete";
+
+          actions.append(loadButton, addButton, deleteButton);
+          row.append(copy, actions);
+          els.collectionList.append(row);
+        });
+      };
+
+      const render = () => {
+        const wordsPerNickel = Math.max(1, Number(state.wordsPerNickel) || 60000);
+        const currentWords = getCurrentWords();
+        const currentReward = getReward(currentWords, wordsPerNickel);
+        const savedReward = getReward(state.savedWords, wordsPerNickel);
+        const remainder = currentWords % wordsPerNickel;
+        const remaining = currentWords === 0 ? wordsPerNickel : wordsPerNickel - remainder;
+        const progress = Math.round((remainder / wordsPerNickel) * 100);
+        const pageCount = Math.ceil(currentWords / PAGE_WORDS);
+
+        els.rateInput.value = wordsPerNickel;
+        els.bookWordsPage.value = state.wordsPerBookPage;
+        els.currentWords.textContent = `${formatNumber(currentWords)} ${
+          currentWords === 1 ? "word" : "words"
+        }`;
+        els.currentMoney.textContent = formatMoney(currentReward.money);
+        els.pageEstimate.textContent = `${formatNumber(pageCount)} ${
+          pageCount === 1 ? "page" : "pages"
+        }`;
+        els.savedMoney.textContent = formatMoney(savedReward.money);
+        els.savedNickels.textContent = `${formatNumber(savedReward.nickels)} ${
+          savedReward.nickels === 1 ? "nickel" : "nickels"
+        } earned`;
+        els.savedWords.textContent = `${formatNumber(state.savedWords)} saved ${
+          state.savedWords === 1 ? "word" : "words"
+        }`;
+        els.progressCopy.textContent = `${progress}% to next nickel`;
+        els.remainingCopy.textContent = `${formatNumber(remaining)} ${
+          remaining === 1 ? "word" : "words"
+        } left`;
+        els.progressBar.style.width = `${progress}%`;
+        renderCollection();
+      };
+
+      els.readerText.addEventListener("input", () => {
+        state = {
+          ...state,
+          draftWordCount: null,
+          currentItem: null,
+        };
+        saveDraftText();
+        render();
+      });
+      els.readerText.addEventListener("change", saveDraftText);
+
+      window.addEventListener("beforeunload", saveDraftText);
+
+      els.fileInput.addEventListener("change", async (event) => {
+        const [file] = event.target.files;
+        if (!file) {
+          return;
+        }
+
+        try {
+          els.readerText.value = await file.text();
+          state = {
+            ...state,
+            draftWordCount: null,
+            currentItem: {
+              detail: file.name,
+              source: "File",
+              title: file.name,
+              words: countWords(els.readerText.value),
+            },
+          };
+          saveDraftText();
+          render();
+          setToast(`Loaded ${file.name}`);
+        } catch {
+          setToast("Could not read that file.");
+        } finally {
+          event.target.value = "";
+        }
+      });
+
+      els.wikiForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!els.wikiUrl.value.trim()) {
+          setToast("Paste a Wikipedia article URL first.");
+          return;
+        }
+
+        els.wikiButton.disabled = true;
+        els.wikiButton.textContent = "Loading...";
+
+        try {
+          const article = await fetchWikipediaArticle(els.wikiUrl.value);
+          els.readerText.value = article.text;
+          state = {
+            ...state,
+            draftWordCount: null,
+            currentItem: {
+              detail: els.wikiUrl.value.trim(),
+              source: "Wikipedia",
+              title: article.title,
+              words: countWords(article.text),
+            },
+          };
+          saveDraftText();
+          render();
+          setToast(`Loaded ${article.title} from Wikipedia.`);
+        } catch (error) {
+          setToast(error.message);
+        } finally {
+          els.wikiButton.disabled = false;
+          els.wikiButton.textContent = "Count Wikipedia page";
+        }
+      });
+
+      els.bookForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!els.bookIsbn.value.trim()) {
+          setToast("Enter an ISBN first.");
+          return;
+        }
+
+        els.bookButton.disabled = true;
+        els.bookButton.textContent = "Looking up...";
+
+        try {
+          const book = await fetchBookEstimate(els.bookIsbn.value);
+          const yearCopy = book.year ? ` (${book.year})` : "";
+          els.readerText.value = [
+            "Estimated book word count",
+            `Title: ${book.title}${yearCopy}`,
+            `Author: ${book.author}`,
+            `ISBN: ${book.isbn}`,
+            `Pages from Open Library: ${formatNumber(book.pages)}`,
+            `Estimate: ${formatNumber(book.estimatedWords)} words`,
+            `Formula: ${formatNumber(book.pages)} pages x ${formatNumber(book.wordsPerPage)} words/page`,
+            "",
+            "This is an estimate from book page data, not the full book text.",
+          ].join("\n");
+          state = {
+            ...state,
+            currentItem: {
+              detail: `ISBN ${book.isbn} / ${formatNumber(book.pages)} pages x ${formatNumber(
+                book.wordsPerPage
+              )} words/page`,
+              source: "Book estimate",
+              title: book.title,
+              words: book.estimatedWords,
+            },
+            draftWordCount: book.estimatedWords,
+            wordsPerBookPage: book.wordsPerPage,
+          };
+          saveDraftText();
+          render();
+          setToast(`Estimated ${book.title}.`);
+        } catch (error) {
+          setToast(error.message);
+        } finally {
+          els.bookButton.disabled = false;
+          els.bookButton.textContent = "Estimate book";
+        }
+      });
+
+      els.applyRate.addEventListener("click", () => {
+        state = {
+          ...state,
+          wordsPerNickel: Math.max(1, Number(els.rateInput.value) || 60000),
+        };
+        saveState(state);
+        render();
+        setToast("Reward rate updated.");
+      });
+
+      els.addButton.addEventListener("click", () => {
+        const currentWords = getCurrentWords();
+        if (currentWords === 0) {
+          setToast("Paste or upload some text first.");
+          return;
+        }
+
+        const item = getCurrentCollectionItem();
+        state = {
+          ...state,
+          collection: item ? [item, ...(state.collection ?? [])] : state.collection,
+          savedWords: state.savedWords + currentWords,
+        };
+        saveState(state);
+        render();
+        setToast(`Added ${formatNumber(currentWords)} words and saved it to collection.`);
+      });
+
+      els.saveItemButton.addEventListener("click", saveCurrentToCollection);
+
+      els.copyButton.addEventListener("click", async () => {
+        const wordsPerNickel = Math.max(1, Number(state.wordsPerNickel) || 60000);
+        const currentWords = getCurrentWords();
+        const currentReward = getReward(currentWords, wordsPerNickel);
+        const savedReward = getReward(state.savedWords, wordsPerNickel);
+        const summary = [
+          `Current text: ${formatNumber(currentWords)} words`,
+          `Current reward: ${formatMoney(currentReward.money)}`,
+          `Saved total: ${formatNumber(state.savedWords)} words`,
+          `Saved reward: ${formatMoney(savedReward.money)}`,
+          `Rate: 1 nickel per ${formatNumber(wordsPerNickel)} words`,
+        ].join("\n");
+
+        try {
+          await navigator.clipboard.writeText(summary);
+          setToast("Summary copied.");
+        } catch {
+          setToast(summary);
+        }
+      });
+
+      els.resetButton.addEventListener("click", () => {
+        state = {
+          ...state,
+          savedWords: 0,
+        };
+        saveState(state);
+        render();
+        setToast("Saved total reset.");
+      });
+
+      els.clearCollectionButton.addEventListener("click", () => {
+        state = {
+          ...state,
+          collection: [],
+        };
+        saveState(state);
+        render();
+        setToast("Collection cleared.");
+      });
+
+      els.collectionList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        const row = event.target.closest(".collection-item");
+
+        if (!button || !row) {
+          return;
+        }
+
+        const item = (state.collection ?? []).find((entry) => entry.id === row.dataset.id);
+
+        if (!item) {
+          return;
+        }
+
+        if (button.dataset.action === "delete") {
+          state = {
+            ...state,
+            collection: (state.collection ?? []).filter((entry) => entry.id !== item.id),
+          };
+          saveState(state);
+          render();
+          setToast(`Deleted ${item.title}.`);
+          return;
+        }
+
+        if (button.dataset.action === "add") {
+          state = {
+            ...state,
+            savedWords: state.savedWords + item.words,
+          };
+          saveState(state);
+          render();
+          setToast(`Added ${formatNumber(item.words)} words from ${item.title}.`);
+          return;
+        }
+
+        if (button.dataset.action === "load") {
+          els.readerText.value = [
+            item.title,
+            `Source: ${item.source}`,
+            `Saved words: ${formatNumber(item.words)}`,
+            item.detail,
+            "",
+            "Loaded from collection. This saved item keeps the word count, not the full text.",
+          ].join("\n");
+          state = {
+            ...state,
+            currentItem: {
+              detail: item.detail,
+              source: item.source,
+              title: item.title,
+              words: item.words,
+            },
+            draftText: els.readerText.value,
+            draftWordCount: item.words,
+          };
+          saveState(state);
+          render();
+          setToast(`Loaded ${item.title}.`);
+        }
+      });
+
+      els.sampleButton.addEventListener("click", () => {
+        els.readerText.value = sampleText;
+        state = {
+          ...state,
+          currentItem: {
+            detail: "Built-in sample text",
+            source: "Sample",
+            title: "Sample text",
+            words: countWords(sampleText),
+          },
+          draftWordCount: null,
+        };
+        saveDraftText();
+        render();
+        setToast("Sample loaded.");
+      });
+
+      render();
+    </script>
+  </body>
+</html>
