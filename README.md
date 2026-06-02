@@ -1,9 +1,11 @@
 # Word Nickel Counter
 
 A standalone page for counting words from pasted text, uploaded `.txt` / `.md`
-files, Wikipedia article URLs, or estimated book word counts from ISBNs. It
-calculates one nickel for every 60,000 words, keeps a saved running total in the
-cloud, and stores a lightweight shared collection of saved reading items.
+files, Wikipedia article URLs, or book word counts from ISBNs. For books, users
+can paste an exact word count found through AI/search, with page-based estimates
+available as a fallback. It calculates one nickel for every 60,000 words, keeps a
+saved running total in the cloud, and stores a lightweight shared collection of
+saved reading items.
 
 ## Open Locally
 
