@@ -1193,11 +1193,11 @@ This sample is only here so the counter has something friendly to measure.`;
             ...state,
             currentItem: {
               detail: book.hasExactWords
-                ? `ISBN ${book.isbn} / exact word count entered`
-                : `ISBN ${book.isbn} / ${formatNumber(book.pages)} pages x ${formatNumber(
+                ? `Book: ${book.title} / ISBN ${book.isbn} / exact word count entered`
+                : `Book: ${book.title} / ISBN ${book.isbn} / ${formatNumber(book.pages)} pages x ${formatNumber(
                     book.wordsPerPage
                   )} words/page`,
-              source: book.hasExactWords ? "Book word count" : "Book estimate",
+              source: book.hasExactWords ? "Book exact words" : "Book estimate",
               title: book.title,
               words: book.estimatedWords,
             },
