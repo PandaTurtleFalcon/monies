@@ -183,7 +183,7 @@
       }
 
       .book-form {
-        grid-template-columns: minmax(0, 1fr) minmax(130px, 180px) auto;
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) auto auto;
       }
 
       .lookup-form input {
@@ -496,14 +496,16 @@
               aria-label="Book ISBN"
             />
             <input
-              id="book-words-page"
+              id="book-exact-words"
               type="number"
               min="1"
-              step="25"
-              value="275"
-              aria-label="Estimated words per page"
+              step="1"
+              placeholder="Exact words"
+              aria-label="Exact book word count"
             />
-            <button class="btn secondary" id="book-button" type="submit">Estimate book</button>
+            <input id="book-words-page" type="hidden" value="275" />
+            <button class="btn secondary" id="book-search-button" type="button">Ask AI/search</button>
+            <button class="btn secondary" id="book-button" type="submit">Use book</button>
           </form>
 
           <textarea
@@ -598,8 +600,10 @@
         addButton: document.querySelector("#add-button"),
         applyRate: document.querySelector("#apply-rate"),
         bookButton: document.querySelector("#book-button"),
+        bookExactWords: document.querySelector("#book-exact-words"),
         bookForm: document.querySelector("#book-form"),
         bookIsbn: document.querySelector("#book-isbn"),
+        bookSearchButton: document.querySelector("#book-search-button"),
         bookWordsPage: document.querySelector("#book-words-page"),
         clearCollectionButton: document.querySelector("#clear-collection-button"),
         cloudStatus: document.querySelector("#cloud-status"),
@@ -924,6 +928,7 @@ This sample is only here so the counter has something friendly to measure.`;
 
       const fetchBookEstimate = async (value) => {
         const isbn = cleanIsbn(value);
+        const exactWords = Math.round(Number(els.bookExactWords.value) || 0);
         const wordsPerPage = Math.max(1, Number(els.bookWordsPage.value) || BOOK_WORDS_PER_PAGE);
 
         if (!/^(?:[0-9]{10}|[0-9]{13}|[0-9]{9}X)$/.test(isbn)) {
@@ -948,15 +953,20 @@ This sample is only here so the counter has something friendly to measure.`;
           throw new Error("I could not find that ISBN in Open Library.");
         }
 
-        if (!Number.isFinite(pages) || pages <= 0) {
+        if (exactWords <= 0 && (!Number.isFinite(pages) || pages <= 0)) {
           throw new Error("I found the book, but not a page count to estimate from.");
         }
 
+        const hasExactWords = exactWords > 0;
+        const estimatedWords = hasExactWords ? exactWords : Math.round(pages * wordsPerPage);
+
         return {
           author: book.author_name?.[0] ?? "Unknown author",
-          estimatedWords: Math.round(pages * wordsPerPage),
+          countSource: hasExactWords ? "Exact word count you entered" : "Estimated from Open Library page count",
+          estimatedWords,
+          hasExactWords,
           isbn,
-          pages,
+          pages: Number.isFinite(pages) && pages > 0 ? pages : null,
           title: book.title ?? "Untitled book",
           wordsPerPage,
           year: book.first_publish_year,
@@ -1161,24 +1171,33 @@ This sample is only here so the counter has something friendly to measure.`;
         try {
           const book = await fetchBookEstimate(els.bookIsbn.value);
           const yearCopy = book.year ? ` (${book.year})` : "";
+          const pageCopy = book.pages ? `${formatNumber(book.pages)} pages` : "No page count";
+          const formulaCopy = book.hasExactWords
+            ? "Used exact word count entered from search."
+            : `${formatNumber(book.pages)} pages x ${formatNumber(book.wordsPerPage)} words/page`;
           els.readerText.value = [
-            "Estimated book word count",
+            book.hasExactWords ? "Book word count" : "Estimated book word count",
             `Title: ${book.title}${yearCopy}`,
             `Author: ${book.author}`,
             `ISBN: ${book.isbn}`,
-            `Pages from Open Library: ${formatNumber(book.pages)}`,
-            `Estimate: ${formatNumber(book.estimatedWords)} words`,
-            `Formula: ${formatNumber(book.pages)} pages x ${formatNumber(book.wordsPerPage)} words/page`,
+            `Source: ${book.countSource}`,
+            `Pages from Open Library: ${pageCopy}`,
+            `Words: ${formatNumber(book.estimatedWords)}`,
+            `Formula: ${formulaCopy}`,
             "",
-            "This is an estimate from book page data, not the full book text.",
+            book.hasExactWords
+              ? "This uses the exact word count you entered."
+              : "This is an estimate from book page data, not the full book text.",
           ].join("\n");
           state = {
             ...state,
             currentItem: {
-              detail: `ISBN ${book.isbn} / ${formatNumber(book.pages)} pages x ${formatNumber(
-                book.wordsPerPage
-              )} words/page`,
-              source: "Book estimate",
+              detail: book.hasExactWords
+                ? `ISBN ${book.isbn} / exact word count entered`
+                : `ISBN ${book.isbn} / ${formatNumber(book.pages)} pages x ${formatNumber(
+                    book.wordsPerPage
+                  )} words/page`,
+              source: book.hasExactWords ? "Book word count" : "Book estimate",
               title: book.title,
               words: book.estimatedWords,
             },
@@ -1187,13 +1206,28 @@ This sample is only here so the counter has something friendly to measure.`;
           };
           saveDraftText();
           render();
-          setToast(`Estimated ${book.title}.`);
+          setToast(book.hasExactWords ? `Loaded ${book.title}.` : `Estimated ${book.title}.`);
         } catch (error) {
           setToast(error.message);
         } finally {
           els.bookButton.disabled = false;
           els.bookButton.textContent = "Estimate book";
         }
+      });
+
+      els.bookSearchButton.addEventListener("click", () => {
+        const isbn = cleanIsbn(els.bookIsbn.value);
+
+        if (!isbn) {
+          setToast("Enter an ISBN first.");
+          return;
+        }
+
+        const query = encodeURIComponent(
+          `Find the exact word count for the book with ISBN ${isbn}. If exact word count is not available, say that clearly.`
+        );
+        window.open(`https://www.perplexity.ai/search?q=${query}`, "_blank", "noopener,noreferrer");
+        setToast("Opened an AI/search page. Paste the exact word count here if you find one.");
       });
 
       els.applyRate.addEventListener("click", () => {
